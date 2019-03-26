@@ -1,4 +1,4 @@
-module serializer(
+module serializer (
   input               clk_i,
   input               srst_i,
   
@@ -11,71 +11,50 @@ module serializer(
   output logic        busy_o
 );
 
-logic [0:15] input_data;
-logic [3:0]  input_data_mod;
-logic        input_data_valid;
-logic        ser_end;
 
+logic        wrk_en;
+logic        data_mod_valid;
+
+always_comb
+  begin
+    data_mod_valid = ( data_mod_i > 2 ) ? 1'b1 : 1'b0;
+    wrk_en         = data_val_i && data_mod_valid;
+  end  
+
+
+logic [15:0] input_data;
+logic [3:0]  input_data_mod;
+logic [3:0]  cntr;
 
 always_ff @( posedge clk_i )
   begin
-    if ( srst_i )
+    if( srst_i )
       begin
-        input_data       <= '0;
-        input_data_mod   <= '0;
-        input_data_valid <= '0;
-        ser_end          <= '0;
-        busy_o           <= '0;
+        busy_o         <= '0;
+        ser_data_val_o <= '0;
+        ser_data_o     <= '0;
       end
-    else if ( data_val_i ) // init block
+    else if( busy_o )
       begin
-        input_data       <= data_i;
-        input_data_mod   <= data_mod_i;        
-        input_data_valid <= 1'b1;
-      end
-    else if ( ser_end ) // ending block
-      begin
-        input_data_valid <= 1'b0;
-        busy_o           <= 1'b0;
-        ser_data_val_o   <= 1'b0;
-        ser_end          <= 1'b0;
-      end
-    else if ( input_data_valid && ( input_data_mod > 2 ) ) // work block
-      begin        
-        busy_o         <= 1'b1;
-        ser_data_val_o <= 1'b1;
-        for( int i = 0; i < input_data_mod; i++ )
+        cntr       <= cntr- 1'b1;
+        ser_data_o <= input_data[cntr];        
+        if( cntr == input_data_mod )
           begin
-            ser_data_o <= input_data[i];    
-            
-            if ( i == ( input_data_mod - 1 ) )
-              begin
-                ser_end <= 1'b1;
-              end
+            busy_o         <= 1'b0;
+            ser_data_val_o <= 1'b0;
           end
       end
-    else // idle block
+    else if( wrk_en )
       begin
-        busy_o         <= 1'b0;
-        ser_data_val_o <= 1'b0;
+        input_data     <= data_i;
+        input_data_mod <= 4'b1111 - data_mod_i;
+        cntr           <= 4'b1110;
+        ser_data_o     <= data_i[4'b1111];
+        busy_o         <= '1;
+        ser_data_val_o <= '1;
       end
-  end  
+  end
 
-  
-//always_comb
-//  begin : always_comb_block
-//    if ( input_data_mod < 3 )
-//      begin
-//        // do not work
-//      end
-//    else
-//      begin : else_block
-//        for( int i = 0; i < 16; i++ )
-//          begin : for_block
-//            
-//          end : for_block
-//      end : else_block 
-//  end : always_comb_block
 
 endmodule
 
