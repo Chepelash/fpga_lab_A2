@@ -59,9 +59,9 @@ endtask
 
 task automatic init_queue_values;
 
-  for( int i = 3; i < 16; i++ )
+  for( int i = 3; i < WIDTH; i++ )
     begin
-      for( bit [15:0] j = 0; j < 2**i; j++ )
+      for( bit [WIDTH-1:0] j = 0; j < 2**i; j++ )
         begin
           input_values.push_back({<<{j}});
         end
@@ -71,48 +71,45 @@ endtask
 
 
 task automatic checking_output;
+  int cntr;
+  bit [WIDTH-1:0] cur_value;
 
-  bit [15:0] cur_value;
-  @( posedge ser_data_val_o );
-  for( int i = 3; i < 16; i++ )
+  for( int i = 3; i < WIDTH; i++ )
     begin
       for( int j = 0; i < 2**i; j++ )
         begin
-          cur_value = output_values.pop_front();
-          $display("checking_output : cur_value = %16b", cur_value);
-          for( int k = 15; k > ( 15 - i ); k-- )
-            begin
-              $display("checking_output : cur_value[k] %b; ser_data_o %b", 
-                        cur_value[k], ser_data_o);
+          @( posedge ser_data_val_o );
+          
+          cur_value = output_values.pop_front();          
+          for( int k = ( WIDTH - 1 ); k > ( WIDTH - 1 - i ); k-- )
+            begin              
+              @( negedge clk );
               if( cur_value[k] == ser_data_o )
-                begin
-                  $display("ok");
+                begin    
+                  if( !(cntr++ % 100) )
+                    $write(" . ");
                 end
               else
                 begin
-                  $display("fail");
+                  $display("Fail! Cur_value = %16b", cur_value);
                   $stop();
                 end
-              
-              @( negedge clk );
             end
-          @( posedge ser_data_val_o );
-          @( negedge clk );
         end        
     end 
+
 
 endtask
 
 
 task automatic send_values;
 
-  bit [15:0] cur_value;
-  for( int i = 3; i < 16; i++ )
+  bit [WIDTH-1:0] cur_value;
+  for( int i = 3; i < WIDTH; i++ )
     begin
       for( int j = 0; j < 2**i; j++ )
         begin
-          cur_value   = input_values.pop_front();
-          $display("send_values : cur_value = %16b", cur_value);
+          cur_value   = input_values.pop_front();          
           data_i     <= cur_value;
           data_mod_i <= i;
           apply_valid_input();
@@ -143,11 +140,7 @@ serializer       #(
 );
 
 
-//always
-//  begin
-//    clk_gen();    
-//  end
-//  
+
 initial
   begin
     init_queue_values();
@@ -169,40 +162,11 @@ initial
       checking_output();
     join_none
     
-    fork
-      send_values();
-    join
-    
-    
-    
-//    for( int i = 0; i < 2; i++ )
-//      begin
-//        for( int j = 0; j < 4; j++ )
-//          begin
-//            data_i      <= input_values[i];
-//            data_mod_i  <= input_mods[j];
-//            output_value = 'b0;
-//            apply_valid_input();
-//            for( int k = 0; k < input_mods[j]; k++ )
-//              begin                
-//                output_value[k] = ser_data_o;
-//                @( posedge clk );
-//              end
-//            if( output_value == expected_values[cntr] )
-//              begin
-//                $display("OK! Expected value = %8b; ouput value = %8b;", 
-//                         expected_values[cntr], output_value);
-//              end
-//            else
-//              begin
-//                $display("Fail! Expected value = %8b; ouput value = %8b;", 
-//                         expected_values[cntr], output_value);
-//                $stop();
-//              end 
-//            cntr++;   
-//          end
-//      end
-    
+    fork      
+      send_values();  
+    join 
+
+    $display("\n--------------------------------");
     $display("\nEveryting is fine!");
     $stop();
     
