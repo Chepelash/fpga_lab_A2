@@ -101,7 +101,7 @@ initial
                 output_value[k] = ser_data_o;
                 @( posedge clk );
               end
-            if( output_value == expected_values[cntr++] )
+            if( output_value == expected_values[cntr] )
               begin
                 $display("OK! Expected value = %8b; ouput value = %8b;", 
                          expected_values[cntr], output_value);
@@ -111,7 +111,8 @@ initial
                 $display("Fail! Expected value = %8b; ouput value = %8b;", 
                          expected_values[cntr], output_value);
                 $stop();
-              end  
+              end 
+            cntr++;   
           end
       end
     
