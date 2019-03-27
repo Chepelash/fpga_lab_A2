@@ -26,6 +26,17 @@ logic [15:0] input_data;
 logic [3:0]  input_data_mod;
 logic [3:0]  cntr;
 
+
+always_ff @( posedge clk_i )
+  begin
+    if ( wrk_en )
+      begin
+        input_data     <= data_i;
+        input_data_mod <= 4'd15 - data_mod_i;
+      end
+  end
+
+
 always_ff @( posedge clk_i )
   begin
     if( srst_i )
@@ -45,11 +56,9 @@ always_ff @( posedge clk_i )
           end
       end
     else if( wrk_en )
-      begin
-        input_data     <= data_i;
-        input_data_mod <= 4'b1111 - data_mod_i;
-        cntr           <= 4'b1110;
-        ser_data_o     <= data_i[4'b1111];
+      begin        
+        cntr           <= 4'd14;
+        ser_data_o     <= data_i[4'd15];
         busy_o         <= '1;
         ser_data_val_o <= '1;
       end
