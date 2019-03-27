@@ -1,19 +1,21 @@
-module serializer (
-  input               clk_i,
-  input               srst_i,
+module serializer #(
+  parameter WIDTH = 16
+)(
+  input                            clk_i,
+  input                            srst_i,
   
-  input        [15:0] data_i,
-  input        [3:0]  data_mod_i,
-  input               data_val_i,
+  input        [WIDTH-1:0]         data_i,
+  input        [$clog2(WIDTH)-1:0] data_mod_i,
+  input                            data_val_i,
   
-  output logic        ser_data_o,
-  output logic        ser_data_val_o,
-  output logic        busy_o
+  output logic                     ser_data_o,
+  output logic                     ser_data_val_o,
+  output logic                     busy_o
 );
 
 
-logic        wrk_en;
-logic        data_mod_valid;
+logic wrk_en;
+logic data_mod_valid;
 
 always_comb
   begin
@@ -22,9 +24,9 @@ always_comb
   end  
 
 
-logic [15:0] input_data;
-logic [3:0]  input_data_mod;
-logic [3:0]  cntr;
+logic [WIDTH-1:0]          input_data;
+logic [$clog2(WIDTH)-1:0]  input_data_mod;
+logic [$clog2(WIDTH)-1:0]  cntr;
 
 
 always_ff @( posedge clk_i )
@@ -32,7 +34,7 @@ always_ff @( posedge clk_i )
     if ( wrk_en )
       begin
         input_data     <= data_i;
-        input_data_mod <= 4'd15 - data_mod_i;
+        input_data_mod <= ( WIDTH - 1'b1 ) - data_mod_i;
       end
   end
 
@@ -57,8 +59,8 @@ always_ff @( posedge clk_i )
       end
     else if( wrk_en )
       begin        
-        cntr           <= 4'd14;
-        ser_data_o     <= data_i[4'd15];
+        cntr           <= WIDTH - 2'd2;
+        ser_data_o     <= data_i[WIDTH-1'b1];
         busy_o         <= '1;
         ser_data_val_o <= '1;
       end
